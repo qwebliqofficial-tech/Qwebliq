@@ -1,0 +1,159 @@
+{
+  "theme": "Dark/Light toggle (Default: Dark Mode - Deep Obsidian)",
+  "typography": {
+    "headings": {
+      "family": "Sora, sans-serif",
+      "weight": "font-bold to font-black",
+      "tracking": "tracking-tight to tracking-tighter",
+      "usage": "H1, H2, H3. High impact, premium feel. Never use Inter for headings."
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weight": "font-normal to font-medium",
+      "tracking": "tracking-normal",
+      "usage": "Use for readable paragraphs, descriptions, and dashboard data."
+    },
+    "accents_mono": {
+      "family": "Space Grotesk, sans-serif",
+      "weight": "font-medium",
+      "tracking": "tracking-[0.2em]",
+      "usage": "Overlines, labels, numbers, cost calculator outputs, technical badges."
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-tight",
+      "h3": "text-xl sm:text-2xl tracking-tight",
+      "body": "text-base leading-relaxed text-gray-300 (dark) or text-gray-600 (light)"
+    }
+  },
+  "colors": {
+    "primary": {
+      "black": "#0A0A0A",
+      "white": "#FFFFFF",
+      "electric_blue": "#3B82F6"
+    },
+    "accents": {
+      "violet": "#8B5CF6",
+      "indigo": "#6366F1"
+    },
+    "backgrounds": {
+      "dark": "bg-[#0A0A0A] or bg-zinc-950",
+      "light": "bg-[#F9FAFB] or bg-white",
+      "surface_dark": "bg-white/5",
+      "surface_light": "bg-black/5"
+    },
+    "text": {
+      "dark_theme": {
+        "primary": "text-white",
+        "secondary": "text-zinc-400"
+      },
+      "light_theme": {
+        "primary": "text-zinc-950",
+        "secondary": "text-zinc-500"
+      }
+    },
+    "borders": {
+      "dark": "border-white/10",
+      "light": "border-black/10"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "Use backdrop-blur-xl or 2xl with bg-white/70 (light) or bg-black/60 (dark) + 1px border. Never use 100% transparent backgrounds for headers or overlays.",
+    "gradients": "Restrained use of electric blue-to-violet accents (e.g., bg-gradient-to-r from-blue-500 to-violet-500). DO NOT use full-screen flat gradients. Favor 3D mesh gradients behind glass.",
+    "shadows": "Ambient + Direct shadows. Dark mode relies heavily on surface shifts (bg-white/5) and 1px borders rather than heavy drop shadows.",
+    "borders": "Subtle border-white/10 on dark mode for a Linear-style crispness."
+  },
+  "component_rules": {
+    "buttons": "Pill-shaped or sharp rounded-md with interaction animations. Primary CTA uses Electric Blue. Hover states must explicitly set text and background color.",
+    "cards": "Flat background with 1px subtle border, no shadow in dark mode. On hover: translate-y-1, border color brightens.",
+    "forms": "Use Shadcn Form, Input, Textarea, Select. Heavily customize to remove standard template look. Ensure accessible focus rings.",
+    "navigation": "Sticky top with glassmorphism (z-50). Visible links on desktop. Dark mode header must have background, not transparent.",
+    "dashboards": "High density, pure functionality. Avoid Space Grotesk here. Use Inter for data readability. Tight grids, minimal padding.",
+    "toasts": "Use Sonner for all notifications."
+  },
+  "grids": {
+    "marketing": "Asymmetric Bento Grid (Tetris Mode). grid-cols-1 md:grid-cols-12 gap-8. Create visual tension.",
+    "dashboard": "High Density Grid. grid-cols-1 md:grid-cols-4 gap-4 or gap-6. Maximize data correlation."
+  },
+  "layouts": {
+    "spacing": "Generous spacing philosophy. p-8 to p-24 for marketing sections. Containers with borders must have internal padding to prevent collision.",
+    "hero": "Max overlay opacity bg-black/50 if image used. Floating browser previews and refined 3D/parallax effects requested.",
+    "responsive": "Mobile first. Hide complex 3D on mobile if it hurts performance. Max mobile image height 80vh."
+  },
+  "motion": {
+    "philosophy": "Refined interactive motion (Framer/Apple style).",
+    "libraries": "Framer Motion for UI animations.",
+    "interactions": "Hover states on all interactive elements. Staggered entrance animations for lists. Smooth scrolling for marketing pages."
+  },
+  "accessibility": {
+    "contrast": "APCA or WCAG AA standards. Minimum 4.5:1 for body text.",
+    "focus": "High contrast focus rings. focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black.",
+    "testing": "All interactive elements MUST have a data-testid attribute.",
+    "motion": "Respect prefers-reduced-motion media query."
+  },
+  "media": {
+    "images": "High quality, conceptual and relevant. Do not stretch. Use object-cover. Images over dark mode must pop.",
+    "icons": "lucide-react for default crisp icons. Use uniformly sized and stroke-width icons."
+  },
+  "3d_libraries": {
+    "recommendation": "Use Framer Motion for pseudo-3D parallax or tilt effects. Keep it performant."
+  },
+  "explanation": {
+    "visual_direction": "A fusion of Apple's crispness, Linear's precision, and Awwwards' creativity. Uses deep obsidian backgrounds, restrained electric blue to violet accents, and high-contrast glassmorphism.",
+    "layout": "Marketing pages utilize the 'Tetris' Bento Grid for asymmetric storytelling. Dashboards utilize high-density, cardless grids prioritizing data hierarchy and functionality.",
+    "information_architecture": "Public Site captures leads via portfolio, services, and calculator. Admin Dashboard centralizes content control. Client Portal centralizes project management and approvals.",
+    "responsive_strategy": "Mobile-first approach. Complex grids collapse to single columns on mobile. Navigation shifts to a full-screen glass menu. Images capped at 80vh to prevent scrolling fatigue.",
+    "interaction_states": "Micro-interactions on every clickable element. Floating browser previews in hero. Hover states shift colors and elevate components slightly."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1666698809123-44e998e93f23?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwyfHxkaWdpdGFsJTIwYWdlbmN5JTIwb2ZmaWNlfGVufDB8fHx8MTc4MTg3ODc1OHww&ixlib=rb-4.1.0&q=85",
+      "description": "Digital agency office with team working",
+      "category": "about_section"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1672080070762-764c74ee1227?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMDNkJTIwZ2xhc3N8ZW58MHx8fHwxNzg1NjU2NTA0fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Abstract 3D glass texture for backgrounds",
+      "category": "hero_background_or_decorative"
+    },
+    {
+      "url": "https://images.pexels.com/photos/11382581/pexels-photo-11382581.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Fluid glass waves atop vibrant gradient",
+      "category": "service_cards_accent"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1597672996375-4d21cad0cbb9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjd8MHwxfHNlYXJjaHw0fHxsYXB0b3AlMjBtb2NrdXB8ZW58MHx8fHwxNzg1NjU2NTA0fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Black and gray laptop mockup",
+      "category": "portfolio_mockup"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "Build a production-level, high-fidelity app for Qwebliq LLP.",
+    "Implement both Marketing Website (public) and Platform areas (Admin & Client dashboards).",
+    "Use Sora for Headings, Inter for Body, and Space Grotesk sparingly for numerical/techy accents.",
+    "Ensure dark/light theme toggle. Default should be dark mode reflecting a premium tech agency.",
+    "Apply Linear-style aesthetics: subtle 1px borders, deep black/charcoal backgrounds, electric blue/violet accents.",
+    "Integrate Framer Motion for scroll-triggered reveals, floating elements, and button hover states.",
+    "Always apply `data-testid` to interactive elements.",
+    "Use 'lucide-react' for icons.",
+    "DO NOT output raw HTML for standard interactions—use Radix/Shadcn primitives (Dropdowns, Accordions, Dialogs).",
+    "CRITICAL: Output .js/.jsx syntax as per the workspace constraints, DO NOT use TypeScript (.tsx)."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic outputs. Make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all. Always add transitions for specific interactive elements excluding transforms.",
+    "You MUST NOT center align the app container. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters.",
+    "Every interaction needs micro-animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Add subtle grain textures, noise overlays, custom cursors, selection states.",
+    "Main agent relies on provided image URLs. NEVER use placeholder text.",
+    "Prioritize using pre-existing components from src/components/ui.",
+    "Use sonner for toasts."
+  ]
+}
