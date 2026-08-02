@@ -1,12 +1,17 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 
 from database import db
-from schemas import ContentCreateRequest, ProjectCreateRequest
+from schemas import ContentCreateRequest, ProjectCreateRequest, SiteSettingsUpdateRequest
 from security import get_current_user, require_admin
+from services.storage import download_media, upload_media
 
 router = APIRouter(tags=["Dashboards"])
+
+ALLOWED_MEDIA_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4"}
+MAX_MEDIA_BYTES = 25 * 1024 * 1024
 
 
 @router.get("/admin/overview")
@@ -31,6 +36,66 @@ async def list_inquiries(_: dict = Depends(require_admin)) -> list[dict]:
     return await db.inquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
 
 
+@router.get("/admin/site-settings")
+async def get_site_settings(_: dict = Depends(require_admin)) -> dict:
+    settings = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
+    return {"settings": settings}
+
+
+@router.put("/admin/site-settings")
+async def update_site_settings(
+    payload: SiteSettingsUpdateRequest,
+    _: dict = Depends(require_admin),
+) -> dict:
+    settings = payload.settings.copy()
+    settings["key"] = "public"
+    await db.site_settings.update_one({"key": "public"}, {"$set": settings}, upsert=True)
+    saved = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
+    return {"settings": saved}
+
+
+@router.post("/admin/media", status_code=status.HTTP_201_CREATED)
+async def upload_project_media(
+    file: UploadFile = File(...),
+    _: dict = Depends(require_admin),
+) -> dict:
+    if file.content_type not in ALLOWED_MEDIA_TYPES:
+        raise HTTPException(status_code=415, detail="Use a JPG, PNG, WEBP, GIF, or MP4 file")
+    data = await file.read()
+    if len(data) > MAX_MEDIA_BYTES:
+        raise HTTPException(status_code=413, detail="Files must be 25 MB or smaller")
+    extension = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
+    result = await run_in_threadpool(upload_media, data, file.content_type, extension)
+    document = {
+        "storage_path": result["path"],
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "size": result["size"],
+        "is_deleted": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    insert_result = await db.media_files.insert_one(document)
+    return {"id": str(insert_result.inserted_id), "url": f"/api/media/{insert_result.inserted_id}"}
+
+
+@router.get("/media/{media_id}")
+async def get_project_media(media_id: str) -> Response:
+    from bson import ObjectId
+    from bson.errors import InvalidId
+
+    try:
+        record = await db.media_files.find_one(
+            {"_id": ObjectId(media_id), "is_deleted": False},
+            {"_id": 0},
+        )
+    except InvalidId:
+        record = None
+    if record is None:
+        raise HTTPException(status_code=404, detail="Media file not found")
+    data, content_type = await run_in_threadpool(download_media, record["storage_path"])
+    return Response(content=data, media_type=content_type)
+
+
 @router.post("/admin/projects", status_code=status.HTTP_201_CREATED)
 async def add_project(payload: ProjectCreateRequest, _: dict = Depends(require_admin)) -> dict:
     document = payload.model_dump()
@@ -41,6 +106,8 @@ async def add_project(payload: ProjectCreateRequest, _: dict = Depends(require_a
             "technologies": ["Strategy", "Design", "Development"],
         }
     )
+    if not document["cover_image"]:
+        document.pop("cover_image")
     result = await db.projects.insert_one(document)
     document.pop("_id", None)
     document["id"] = str(result.inserted_id)

@@ -1,0 +1,56 @@
+{
+  "summary": "Iteration 2 focused on the new admin editors (pricing, website content, portfolio manager with direct media upload) and public-site integration. Added /app/backend/tests/test_admin_editors.py (11 tests) covering: auth guards for /api/admin/site-settings, /api/admin/media POST, and /api/admin/projects (all return 401 unauthenticated); GET/PUT site-settings round-trip; pricing update reflected in /api/site pricing AND /api/calculator estimates (base + per_page + rush_multiplier math verified for social service); website editor hero description update reflected publicly; social media marketing service present in seeded services; media upload PNG round-trip through /api/media/{id} proxy (valid 1x1 PNG constructed in-test, image/* content-type preserved); text/plain rejected with 415; portfolio project creation with uploaded cover_image visible on public /api/site with same media URL. Full pytest suite (backend_test.py + test_admin_editors.py) now 30/30 passing. UI regression on external preview URL: admin login, admin dashboard renders all editors (pricing, website, portfolio, publishing), pricing editor shows current values (social=30000, per_page=4500, rush=1.25), changing social price to 37777 + save + restore worked (verified via API — /api/site pricing reflected the change during test and was restored to 30000 after), portfolio image upload UI shows 'Media attached' status and Publish project succeeded, published project visible on public / and its image URL is /api/media/{id} (image element present). Mobile 390px layout has 0px horizontal overflow with the new pricing section; social media marketing card + founders (Smaranjit, Diganta) + contact email + phone (+91 97740) all render on mobile.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PUT /api/admin/site-settings", "issue": "SiteSettingsUpdateRequest.settings is typed as an unconstrained dict — an admin could send arbitrary/partial settings and wipe out required nested keys (e.g. remove calculator or services), which would then 500 on /api/site and /api/calculator via KeyError. Consider a stricter Pydantic model or a merge/validate step."},
+      {"endpoint": "GET /api/media/{media_id}", "issue": "Downloads bytes and returns them fully in-memory (no streaming, no Cache-Control/ETag). Fine for 25MB images, but every project image render on the public homepage re-fetches from Emergent object storage — heavy hit as portfolio grows. Add caching headers or CDN in front."},
+      {"endpoint": "POST /api/admin/media", "issue": "storage.py init_storage() caches storage_key in a module-level variable but is NOT threadsafe; on cold start under concurrent uploads two threads may both POST /init. Low probability but worth a lock."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "HomePage.jsx work-section", "issue": "React duplicate key warning 'Encountered two children with the same key, TEST Portfolio' — projects are mapped with key={project.title}; multiple projects sharing the same title (which is possible via admin) collide. Use project.id/_id or project.slug fallback.", "selector": "[data-testid^='project-']", "priority": "MEDIUM"},
+      {"component": "PricingEditor.jsx", "issue": "submit() rebuilds the entire pricing list from calculator base_prices (labels map). Any pricing entry that was originally curated (e.g. custom name/note) will be overwritten with the label-map name and 'Custom scope available' note unless a match by exact name existed. Non-destructive merge would be safer.", "selector": "[data-testid='pricing-editor-form']", "priority": "MEDIUM"},
+      {"component": "WebsiteEditor.jsx", "issue": "Services textarea parser is `|`-delimited and hard-coded to 2 fields; a stray `|` inside a description silently drops the row. Consider a repeater UI or escape.", "selector": "[data-testid='services-editor-input']", "priority": "LOW"},
+      {"component": "ProjectManager.jsx", "issue": "Uses hard-coded process.env.REACT_APP_BACKEND_URL prefix when composing the cover_image (e.g. `${BACKEND_URL}/api/media/{id}`) — persists an absolute URL that will break if the app is later served from a different origin. Storing just the relative `/api/media/{id}` and letting the frontend resolve at render time is more portable.", "selector": "[data-testid='portfolio-media-upload-input']", "priority": "LOW"},
+      {"component": "AdminPage.jsx", "issue": "No image preview after media upload — status text only reads 'Media attached'. A small thumbnail would confirm the correct file was selected before publishing.", "selector": "[data-testid='portfolio-media-status']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin control center (desktop)", "issues": ["Editors are stacked in a wide grid that requires scrolling; a sticky in-page nav or accordion (Overview / Portfolio / Publishing / Pricing / Website) would help non-technical admins find the right editor quickly."]},
+      {"screen": "Home mobile 390px", "issues": ["No horizontal overflow with the new pricing section (verified 0px). Contact and founders still render correctly. Mobile nav drawer background transparency called out in iteration 1 was not re-checked here — still an outstanding item."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_admin_editors.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_editors.xml"
+  ],
+  "action_items": [
+    "HomePage.jsx: use a stable unique key for project mapping (project.id/_id, slug, or index) to remove the React duplicate-key warning triggered by projects sharing titles.",
+    "PricingEditor.jsx: do a non-destructive merge on save so custom pricing name/note fields curated in the DB are preserved.",
+    "Validate PUT /api/admin/site-settings with a strict Pydantic model to prevent an admin (or bad client) from wiping required nested keys (calculator, services) and breaking /api/site and /api/calculator.",
+    "Add Cache-Control (or ETag) headers to GET /api/media/{id} — current implementation re-downloads from object storage on every public homepage load.",
+    "Store cover_image as a relative /api/media/{id} path, not an absolute URL, so images survive an origin change.",
+    "Optional: image thumbnail preview in ProjectManager after upload."
+  ],
+  "critical_code_review_comments": [
+    "schemas.SiteSettingsUpdateRequest uses `settings: dict` with no shape validation — the endpoint is admin-only but still risky; a broken payload cascades to public routes.",
+    "public.get_site_content and public.calculate_project both do `settings['services']` / `settings['calculator']` without a None guard — if site_settings document is ever missing they'll 500 instead of falling back.",
+    "services/storage.py stores a global storage_key without a lock, and re-raises requests exceptions upward — an object-storage 5xx will surface to the admin as a bare 500. Wrap in HTTPException(502) with a friendlier message.",
+    "dashboard.upload_project_media does `file.filename.rsplit('.', 1)[-1]` without validating that the extension matches the content_type (e.g. content_type=image/png but filename=evil.svg). Low risk (storage proxy re-serves with the DB-recorded content_type) but tighten anyway.",
+    "PricingEditor rebuilds pricing from labels map on every save — silently loses any pricing row whose calculator key was removed and any custom copy in `note`."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_admin_editors.py"
+  ],
+  "success_rate": {"backend": "100% (30/30 across backend_test.py + test_admin_editors.py)", "frontend": "100% of admin editor + public integration flows verified (admin login, editor rendering, pricing save+restore, portfolio upload+publish, public site reflects change, mobile layout no overflow, founders/contact intact)"},
+  "test_credentials": "Admin: admin@qwebliq.in / Qw!8yqJAicISOKEwPh7 (from /app/memory/test_credentials.md).",
+  "seed_data_creation": "During iteration 2: several TEST_ prefixed portfolio projects (e.g. 'TEST Media Project <hex>', 'TEST UI Project <hex>') and their uploaded 1x1 PNG media docs in db.media_files. All safe to remove by matching title LIKE 'TEST%' / created_at > now-1h. Pricing/hero regressions were restored to original values after each test via admin PUT.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend suite lives at /app/backend/tests/ with backend_test.py (iteration 1 baseline) + test_admin_editors.py (iteration 2 new admin controls). Run with: pytest /app/backend/tests/ -v. External preview URL from frontend/.env is source of truth for both backend and UI tests. The admin PUT /api/admin/site-settings overwrites the entire `public` settings doc — always fetch current settings, deep-copy, mutate, then PUT back (and restore original after regression). The PricingEditor UI regenerates the pricing list from the calculator base_prices on every save, so any custom pricing note beyond the calculator-keyed services is lost — flag if seen. /api/media/{id} is a proxy back to Emergent object storage; a 200 with image/* content-type and non-empty body is the success signal. Mobile drawer transparency (iter 1) and React duplicate-key warnings for feed/projects (iter 1 + iter 2) remain outstanding UI items for the main agent.",
+  "rca of the issue": "No new critical bugs found in iteration 2 — the new endpoints (site-settings, media upload, /api/media/{id}, project create with cover_image) all pass integration tests and UI regression. The React duplicate-key warning first flagged in iteration 1 now recurs on the projects mapping too because portfolio projects legitimately share titles (multiple 'TEST Portfolio' entries from prior runs); root cause is `key={project.title}` in HomePage.jsx work-section. Fix: use project.id (or _id serialized) or fall back to slug/index. The PricingEditor save-list construction is a latent data-loss risk (rebuilds pricing from calculator keys, discarding any DB pricing entries outside those 5 keys) but did not surface in this test since the seeded pricing only contained calculator-keyed services."
+}

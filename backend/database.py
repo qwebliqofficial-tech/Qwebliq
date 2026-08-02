@@ -17,6 +17,7 @@ async def seed_application_data() -> None:
     await db.newsletter_subscribers.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier", unique=True)
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await db.media_files.create_index("storage_path", unique=True)
 
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]
@@ -99,4 +100,84 @@ async def seed_application_data() -> None:
                     "published_at": "2026-02-20",
                 },
             ]
+        )
+
+    public_settings = {
+        "key": "public",
+        "hero": {
+            "eyebrow": "Qwebliq LLP · Crafted for Growth",
+            "headline": "Building digital experiences that move businesses.",
+            "description": (
+                "Qwebliq creates premium websites, powerful brands, and digital strategies "
+                "that help businesses stand out, generate leads, and increase sales."
+            ),
+        },
+        "services": [
+            {
+                "name": "Digital foundations",
+                "detail": "Websites, product experiences, and distinctive digital homes.",
+            },
+            {
+                "name": "Brand systems",
+                "detail": "Identity, direction, and design systems made to stay coherent.",
+            },
+            {
+                "name": "Commerce & platforms",
+                "detail": "E-commerce, portals, operations, and conversion-focused flows.",
+            },
+            {
+                "name": "Social media marketing",
+                "detail": (
+                    "Content direction, platform strategy, community management, and "
+                    "performance-led campaigns."
+                ),
+            },
+            {
+                "name": "Growth & visibility",
+                "detail": "SEO, performance, social, and practical digital momentum.",
+            },
+        ],
+        "calculator": {
+            "base_prices": {
+                "website": 65000,
+                "ecommerce": 120000,
+                "brand": 45000,
+                "growth": 35000,
+                "social": 30000,
+            },
+            "per_page": 4500,
+            "rush_multiplier": 1.25,
+        },
+        "pricing": [
+            {"name": "Growth website", "starting_at": 65000, "note": "Strategy, UX, design"},
+            {"name": "Social media marketing", "starting_at": 30000, "note": "Monthly channel plan"},
+        ],
+        "contact": {
+            "phones": ["+91 97740 90507", "+91 93628 23252"],
+            "email": "qwebliqofficial@gmail.com",
+            "instagram": "https://www.instagram.com/qwebliq",
+        },
+        "founders": [
+            {
+                "name": "Smaranjit Saha",
+                "role": "Co-Founder & Creative Director",
+                "focus": ["Creative direction", "UI/UX", "Brand strategy"],
+            },
+            {
+                "name": "Diganta Bhowmik",
+                "role": "Co-Founder & Technical Director",
+                "focus": ["Development", "Architecture", "Scalable systems"],
+            },
+        ],
+    }
+    await db.site_settings.update_one(
+        {"key": "public"},
+        {"$setOnInsert": public_settings},
+        upsert=True,
+    )
+    current_settings = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
+    if "founders" not in current_settings:
+        await db.site_settings.update_one(
+            {"key": "public"},
+            {"$set": {"founders": public_settings["founders"]}},
         )

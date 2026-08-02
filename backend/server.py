@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import close_mongo_connection, seed_application_data
 from routers import auth, dashboard, public
+from services.storage import init_storage
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,6 +24,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await seed_application_data()
+    init_storage()
     yield
     close_mongo_connection()
 

@@ -27,7 +27,7 @@ class NewsletterRequest(BaseModel):
 
 
 class CalculatorRequest(BaseModel):
-    project_type: Literal["website", "ecommerce", "brand", "growth"]
+    project_type: str = Field(min_length=2, max_length=50)
     timeline: Literal["standard", "accelerated"]
     pages: int = Field(ge=1, le=50)
 
@@ -43,3 +43,9 @@ class ProjectCreateRequest(BaseModel):
     industry: str = Field(min_length=2, max_length=80)
     summary: str = Field(min_length=10, max_length=500)
     live_url: str = Field(default="", max_length=400)
+    cover_image: str = Field(default="", max_length=700)
+    year: str = Field(default="2026", max_length=10)
+
+
+class SiteSettingsUpdateRequest(BaseModel):
+    settings: dict

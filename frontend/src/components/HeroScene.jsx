@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUpRight, CirclePlay } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function HeroScene() {
+export default function HeroScene({ hero }) {
   return (
     <section className="hero" id="top" data-testid="hero-section">
       <div className="hero-noise" />
@@ -15,7 +15,7 @@ export default function HeroScene() {
           initial={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.5 }}
         >
-          Qwebliq LLP <span /> Crafted for Growth
+          {hero?.eyebrow || "Qwebliq LLP · Crafted for Growth"}
         </motion.p>
         <motion.h1
           animate={{ opacity: 1, y: 0 }}
@@ -23,7 +23,7 @@ export default function HeroScene() {
           initial={{ opacity: 0, y: 30 }}
           transition={{ delay: 0.08, duration: 0.65 }}
         >
-          Building digital experiences that <em>move</em> businesses.
+          {hero?.headline || "Building digital experiences that move businesses."}
         </motion.h1>
         <motion.p
           animate={{ opacity: 1, y: 0 }}
@@ -32,8 +32,7 @@ export default function HeroScene() {
           initial={{ opacity: 0, y: 20 }}
           transition={{ delay: 0.16, duration: 0.6 }}
         >
-          Qwebliq creates premium websites, powerful brands, and digital strategies that
-          help businesses stand out, generate leads, and increase sales.
+          {hero?.description || "Qwebliq creates premium websites, powerful brands, and digital strategies that help businesses stand out, generate leads, and increase sales."}
         </motion.p>
         <motion.div
           animate={{ opacity: 1, y: 0 }}

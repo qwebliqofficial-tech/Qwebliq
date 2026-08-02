@@ -8,13 +8,6 @@ from schemas import CalculatorRequest, InquiryRequest, NewsletterRequest
 
 router = APIRouter(tags=["Public"])
 
-SERVICES = [
-    {"name": "Digital foundations", "detail": "Websites, product experiences, and distinctive digital homes."},
-    {"name": "Brand systems", "detail": "Identity, direction, and design systems made to stay coherent."},
-    {"name": "Commerce & platforms", "detail": "E-commerce, portals, operations, and conversion-focused flows."},
-    {"name": "Growth & visibility", "detail": "SEO, performance, social, and practical digital momentum."},
-]
-
 FAQS = [
     {"q": "What kind of teams do you work with?", "a": "Ambitious businesses, institutions, and founders ready to improve their digital presence."},
     {"q": "Can you support us after launch?", "a": "Yes. Ongoing optimisation, content, support, and growth work can be shaped around your team."},
@@ -30,15 +23,17 @@ async def root() -> dict:
 
 @router.get("/site")
 async def get_site_content() -> dict:
+    settings = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
     projects = await db.projects.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
     posts = await db.feed_posts.find({}, {"_id": 0}).to_list(50)
     blogs = await db.blog_posts.find({"status": "published"}, {"_id": 0}).to_list(50)
     return {
-        "services": SERVICES,
+        "services": settings["services"],
         "projects": projects,
         "feed": posts,
         "blogs": blogs,
         "faqs": FAQS,
+        "settings": settings,
     }
 
 
@@ -66,7 +61,11 @@ async def subscribe(payload: NewsletterRequest) -> dict:
 
 @router.post("/calculator")
 async def calculate_project(payload: CalculatorRequest) -> dict:
-    base_prices = {"website": 65000, "ecommerce": 120000, "brand": 45000, "growth": 35000}
-    timeline_factor = 1.25 if payload.timeline == "accelerated" else 1
-    estimate = int((base_prices[payload.project_type] + (payload.pages - 1) * 4500) * timeline_factor)
+    settings = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
+    calculator = settings["calculator"]
+    base_price = calculator["base_prices"].get(payload.project_type)
+    if base_price is None:
+        raise HTTPException(status_code=422, detail="Unknown project type")
+    timeline_factor = calculator["rush_multiplier"] if payload.timeline == "accelerated" else 1
+    estimate = int((base_price + (payload.pages - 1) * calculator["per_page"]) * timeline_factor)
     return {"estimate": estimate, "currency": "INR", "label": f"₹{estimate:,} onwards"}
