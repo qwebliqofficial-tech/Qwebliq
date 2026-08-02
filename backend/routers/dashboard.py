@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
+from copy import deepcopy
 
+import requests
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 
@@ -12,6 +14,35 @@ router = APIRouter(tags=["Dashboards"])
 
 ALLOWED_MEDIA_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4"}
 MAX_MEDIA_BYTES = 25 * 1024 * 1024
+EXTENSIONS_BY_TYPE = {
+    "image/jpeg": {"jpg", "jpeg"},
+    "image/png": {"png"},
+    "image/webp": {"webp"},
+    "image/gif": {"gif"},
+    "video/mp4": {"mp4"},
+}
+
+
+def merge_settings(current: dict, incoming: dict) -> dict:
+    result = deepcopy(current)
+    for key, value in incoming.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = merge_settings(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def validate_settings(settings: dict) -> None:
+    calculator = settings.get("calculator", {})
+    valid_services = isinstance(settings.get("services"), list) and settings["services"]
+    valid_prices = isinstance(calculator.get("base_prices"), dict) and calculator["base_prices"]
+    valid_math = isinstance(calculator.get("per_page"), (int, float))
+    valid_math = valid_math and calculator["per_page"] >= 0
+    valid_math = valid_math and isinstance(calculator.get("rush_multiplier"), (int, float))
+    valid_math = valid_math and calculator["rush_multiplier"] >= 1
+    if not valid_services or not valid_prices or not valid_math:
+        raise HTTPException(status_code=422, detail="Settings need services and valid calculator rules")
 
 
 @router.get("/admin/overview")
@@ -47,8 +78,12 @@ async def update_site_settings(
     payload: SiteSettingsUpdateRequest,
     _: dict = Depends(require_admin),
 ) -> dict:
-    settings = payload.settings.copy()
+    current = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
+    if current is None:
+        raise HTTPException(status_code=503, detail="Website settings are unavailable")
+    settings = merge_settings(current, payload.settings)
     settings["key"] = "public"
+    validate_settings(settings)
     await db.site_settings.update_one({"key": "public"}, {"$set": settings}, upsert=True)
     saved = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
     return {"settings": saved}
@@ -65,7 +100,12 @@ async def upload_project_media(
     if len(data) > MAX_MEDIA_BYTES:
         raise HTTPException(status_code=413, detail="Files must be 25 MB or smaller")
     extension = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
-    result = await run_in_threadpool(upload_media, data, file.content_type, extension)
+    if extension not in EXTENSIONS_BY_TYPE[file.content_type]:
+        raise HTTPException(status_code=415, detail="File extension does not match its media type")
+    try:
+        result = await run_in_threadpool(upload_media, data, file.content_type, extension)
+    except requests.RequestException:
+        raise HTTPException(status_code=502, detail="Media storage is temporarily unavailable")
     document = {
         "storage_path": result["path"],
         "original_filename": file.filename,
@@ -92,8 +132,15 @@ async def get_project_media(media_id: str) -> Response:
         record = None
     if record is None:
         raise HTTPException(status_code=404, detail="Media file not found")
-    data, content_type = await run_in_threadpool(download_media, record["storage_path"])
-    return Response(content=data, media_type=content_type)
+    try:
+        data, content_type = await run_in_threadpool(download_media, record["storage_path"])
+    except requests.RequestException:
+        raise HTTPException(status_code=502, detail="Media storage is temporarily unavailable")
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @router.post("/admin/projects", status_code=status.HTTP_201_CREATED)

@@ -16,7 +16,7 @@ export default function ProjectManager() {
     data.append("file", file);
     try {
       const response = await api.post("/admin/media", data);
-      setCoverImage(`${process.env.REACT_APP_BACKEND_URL}${response.data.url}`);
+      setCoverImage(response.data.url);
       toast.success("Media is ready for your portfolio project.");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -49,6 +49,7 @@ export default function ProjectManager() {
         <label>Project summary<textarea data-testid="portfolio-summary-input" minLength="10" name="summary" required /></label>
         <label>Cover image or video<input accept="image/jpeg,image/png,image/webp,image/gif,video/mp4" data-testid="portfolio-media-upload-input" onChange={uploadFile} type="file" /></label>
         <span className="media-status" data-testid="portfolio-media-status">{uploading ? "Uploading media…" : coverImage ? "Media attached" : "No media attached"}</span>
+        {coverImage && <img alt="Selected portfolio cover" className="media-preview" data-testid="portfolio-media-preview" src={coverImage} />}
         <button className="button button-primary" data-testid="portfolio-publish-button" disabled={uploading} type="submit"><Plus size={16} /> Publish project</button>
       </form>
     </section>

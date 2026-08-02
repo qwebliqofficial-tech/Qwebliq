@@ -38,6 +38,14 @@ services and work, captures inquiries, and provides scalable admin and client wo
   (Co-Founder & Technical Director) as the leadership team.
 - Added Qwebliq’s supplied logo, Instagram profile, two direct phone routes, email contact, and
   WhatsApp project-conversation shortcut.
+- Added a full administrator control center with non-technical editors for public hero content,
+  services, contact routes, founder names and roles, pricing cards, and calculator ranges.
+- Added Social Media Marketing as a public capability, calculator option, and editable pricing
+  starting point.
+- Added direct administrator media upload for JPG, PNG, WEBP, GIF, and MP4 portfolio assets,
+  alongside live portfolio publishing, website update publishing, and blog publishing.
+- Added protected MongoDB website settings with safe nested updates and cached public media
+  delivery through the Qwebliq backend.
 
 ### Prioritized backlog
 #### P0
@@ -46,7 +54,7 @@ services and work, captures inquiries, and provides scalable admin and client wo
 
 #### P1
 - Attach clients to real projects, milestones, invoices, uploads, approvals, and files.
-- Add full editing, deletion, scheduling, categories, and media management to CMS areas.
+- Add deletion, scheduling, categories, and asset-library browsing to CMS areas.
 - Add exact Tripura Darpan services, outcomes, case-study gallery, and client quote when approved.
 
 #### P2

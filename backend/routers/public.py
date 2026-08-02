@@ -24,6 +24,8 @@ async def root() -> dict:
 @router.get("/site")
 async def get_site_content() -> dict:
     settings = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
+    if settings is None:
+        raise HTTPException(status_code=503, detail="Website settings are unavailable")
     projects = await db.projects.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
     posts = await db.feed_posts.find({}, {"_id": 0}).to_list(50)
     blogs = await db.blog_posts.find({"status": "published"}, {"_id": 0}).to_list(50)
@@ -62,6 +64,8 @@ async def subscribe(payload: NewsletterRequest) -> dict:
 @router.post("/calculator")
 async def calculate_project(payload: CalculatorRequest) -> dict:
     settings = await db.site_settings.find_one({"key": "public"}, {"_id": 0})
+    if settings is None:
+        raise HTTPException(status_code=503, detail="Website settings are unavailable")
     calculator = settings["calculator"]
     base_price = calculator["base_prices"].get(payload.project_type)
     if base_price is None:

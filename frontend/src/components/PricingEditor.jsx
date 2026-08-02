@@ -30,7 +30,7 @@ export default function PricingEditor({ settings, onSave }) {
   function submit(event) {
     event.preventDefault();
     const currentPricing = settings.pricing || [];
-    const pricing = Object.entries(prices).map(([key, startingAt]) => {
+    const managedPricing = Object.entries(prices).map(([key, startingAt]) => {
       const existing = currentPricing.find((item) => item.name === labels[key]);
       return {
         name: labels[key],
@@ -38,6 +38,10 @@ export default function PricingEditor({ settings, onSave }) {
         note: existing?.note || "Custom scope available",
       };
     });
+    const customPricing = currentPricing.filter(
+      (item) => !Object.values(labels).includes(item.name),
+    );
+    const pricing = [...managedPricing, ...customPricing];
     onSave({
       ...settings,
       calculator: { base_prices: prices, per_page: perPage, rush_multiplier: rushMultiplier },
