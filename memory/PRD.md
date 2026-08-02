@@ -48,6 +48,8 @@ services and work, captures inquiries, and provides scalable admin and client wo
   delivery through the Qwebliq backend.
 - Added an admin-only cleanup control for explicitly marked QA inquiries. It requires the exact
   phrase `DELETE TEST DATA` and records the deletion event without touching real inquiries.
+- Extended the same protected cleanup to remove explicitly marked QA portfolio projects and
+  soft-delete their linked media, making those files inaccessible from all website routes.
 
 ### Prioritized backlog
 #### P0

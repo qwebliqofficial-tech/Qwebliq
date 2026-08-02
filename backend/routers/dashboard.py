@@ -26,6 +26,7 @@ TEST_INQUIRY_FILTER = {
     "name": {"$regex": "^TEST "},
     "is_legitimate": {"$ne": True},
 }
+TEST_PROJECT_FILTER = {"is_test": True, "industry": "QA", "title": {"$regex": "^TEST "}}
 EXTENSIONS_BY_TYPE = {
     "image/jpeg": {"jpg", "jpeg"},
     "image/png": {"png"},
@@ -80,22 +81,50 @@ async def list_inquiries(_: dict = Depends(require_admin)) -> list[dict]:
 
 
 @router.post("/admin/inquiries/cleanup-test-data")
-async def cleanup_test_inquiries(
+async def cleanup_test_data(
     payload: TestDataCleanupRequest,
     admin: dict = Depends(require_admin),
 ) -> dict:
     if payload.confirmation != TEST_CLEANUP_CONFIRMATION:
         raise HTTPException(status_code=400, detail="Invalid confirmation phrase")
-    result = await db.inquiries.delete_many(TEST_INQUIRY_FILTER)
+    test_projects = await db.projects.find(TEST_PROJECT_FILTER, {"_id": 0, "cover_image": 1}).to_list(100)
+    media_records = await db.media_files.find(
+        {"is_test": True, "is_deleted": False},
+        {"storage_path": 1},
+    ).to_list(100)
+    deleted_media = 0
+    for media in media_records:
+        media_url = f"/api/media/{media['_id']}"
+        in_use = await db.projects.count_documents(
+            {"cover_image": {"$regex": f"/api/media/{media['_id']}$"}, "is_test": {"$ne": True}},
+        )
+        if in_use:
+            continue
+        update_result = await db.media_files.update_one(
+            {"_id": media["_id"]},
+            {"$set": {"is_deleted": True, "deleted_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        deleted_media += update_result.modified_count
+    inquiry_result = await db.inquiries.delete_many(TEST_INQUIRY_FILTER)
+    project_result = await db.projects.delete_many(TEST_PROJECT_FILTER)
     await db.admin_activity.insert_one(
         {
-            "action": "cleanup_test_inquiries",
+            "action": "cleanup_test_data",
             "admin_email": admin["email"],
-            "deleted_count": result.deleted_count,
+            "deleted_inquiries": inquiry_result.deleted_count,
+            "deleted_projects": project_result.deleted_count,
+            "deleted_media": deleted_media,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
     )
-    return {"deleted_count": result.deleted_count, "message": "Matching test inquiries deleted"}
+    deleted_count = inquiry_result.deleted_count + project_result.deleted_count + deleted_media
+    return {
+        "deleted_count": deleted_count,
+        "deleted_inquiries": inquiry_result.deleted_count,
+        "deleted_projects": project_result.deleted_count,
+        "deleted_media": deleted_media,
+        "message": "Matching test data deleted",
+    }
 
 
 @router.get("/admin/site-settings")
@@ -182,10 +211,22 @@ async def add_project(payload: ProjectCreateRequest, _: dict = Depends(require_a
             "featured": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "technologies": ["Strategy", "Design", "Development"],
+            "is_test": payload.title.startswith("TEST ") and payload.industry == "QA",
         }
     )
     if not document["cover_image"]:
         document.pop("cover_image")
+    elif document["is_test"]:
+        media_id = document["cover_image"].rsplit("/", 1)[-1]
+        try:
+            from bson import ObjectId
+
+            await db.media_files.update_one(
+                {"_id": ObjectId(media_id)},
+                {"$set": {"is_test": True}},
+            )
+        except Exception:
+            pass
     result = await db.projects.insert_one(document)
     document.pop("_id", None)
     document["id"] = str(result.inserted_id)

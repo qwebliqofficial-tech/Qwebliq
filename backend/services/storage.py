@@ -48,3 +48,4 @@ def download_media(path: str) -> tuple[bytes, str]:
     response.raise_for_status()
     content_type = response.headers.get("Content-Type", "application/octet-stream")
     return response.content, content_type
+

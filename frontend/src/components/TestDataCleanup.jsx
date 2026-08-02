@@ -28,7 +28,9 @@ export default function TestDataCleanup({ onDeleted }) {
     setIsDeleting(true);
     try {
       const response = await api.post("/admin/inquiries/cleanup-test-data", { confirmation });
-      toast.success(`${response.data.deleted_count} test inquiries deleted.`);
+      toast.success(
+        `${response.data.deleted_inquiries} inquiries, ${response.data.deleted_projects} projects, and ${response.data.deleted_media} media files deleted.`,
+      );
       setConfirmation("");
       onDeleted();
     } catch (error) {
@@ -47,10 +49,10 @@ export default function TestDataCleanup({ onDeleted }) {
       </AlertDialogTrigger>
       <AlertDialogContent className="cleanup-dialog" data-testid="test-cleanup-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle>Remove test inquiries?</AlertDialogTitle>
+          <AlertDialogTitle>Remove all test data?</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently removes only QA entries deliberately marked as test data.
-            Real client inquiries remain protected.
+            This permanently removes only marked QA inquiries, test portfolio projects, and
+            linked test media. Real projects and client inquiries remain protected.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <label className="cleanup-label" htmlFor="cleanup-confirmation-input">

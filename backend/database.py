@@ -2,6 +2,8 @@ import os
 from datetime import datetime, timezone
 
 import bcrypt
+from bson import ObjectId
+from bson.errors import InvalidId
 from motor.motor_asyncio import AsyncIOMotorClient
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
@@ -19,6 +21,7 @@ async def seed_application_data() -> None:
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.media_files.create_index("storage_path", unique=True)
     await db.inquiries.create_index([("record_type", 1), ("is_test", 1), ("name", 1)])
+    await db.projects.create_index([("is_test", 1), ("industry", 1), ("title", 1)])
 
     await db.inquiries.update_many(
         {
@@ -27,6 +30,20 @@ async def seed_application_data() -> None:
         },
         {"$set": {"record_type": "inquiry", "is_test": True, "is_legitimate": False}},
     )
+    await db.projects.update_many(
+        {"title": {"$regex": "^TEST "}, "industry": "QA"},
+        {"$set": {"is_test": True}},
+    )
+    test_projects = await db.projects.find({"is_test": True}, {"_id": 0, "cover_image": 1}).to_list(100)
+    for project in test_projects:
+        media_id = project.get("cover_image", "").rsplit("/", 1)[-1]
+        try:
+            await db.media_files.update_one(
+                {"_id": ObjectId(media_id)},
+                {"$set": {"is_test": True}},
+            )
+        except InvalidId:
+            continue
 
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]
