@@ -34,11 +34,14 @@ services and work, captures inquiries, and provides scalable admin and client wo
 - Client portal route with project status, timeline, files, approvals, and communication actions.
 - Dark/light preference, mobile navigation, responsive layouts, interaction test IDs, and
   accessibility-minded focus and reduced-motion styles.
+- Added Smaranjit Saha (Co-Founder & Creative Director) and Diganta Bhowmik
+  (Co-Founder & Technical Director) as the leadership team.
+- Added Qwebliq’s supplied logo, Instagram profile, two direct phone routes, email contact, and
+  WhatsApp project-conversation shortcut.
 
 ### Prioritized backlog
 #### P0
-- Replace editable public contact placeholders with Qwebliq’s actual phone, WhatsApp, email,
-  address, business hours, and Google Maps destination.
+- Add Qwebliq’s street address, business hours, and Google Maps destination when available.
 - Replace temporary administrator credentials with owner-supplied credentials.
 
 #### P1

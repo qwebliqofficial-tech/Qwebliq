@@ -16,7 +16,13 @@ export default function SiteNav({ isLight, onThemeToggle }) {
   return (
     <header className="site-nav" data-testid="site-navigation">
       <a className="brand-mark" data-testid="home-brand-link" href="#top">
-        <span>Q</span>WEBLIQ
+        <img
+          alt="Qwebliq logo"
+          className="brand-logo-image"
+          data-testid="header-qwebliq-logo"
+          src="https://customer-assets-lxgj4vgw.emergentagent.net/job_qwebliq-staging/artifacts/7s1or5s3_6b96f71e-538c-4696-85b3-c0fca5ab82be.png"
+        />
+        QWEBLIQ
       </a>
       <nav className={open ? "nav-links nav-open" : "nav-links"} data-testid="primary-navigation">
         {links.map(([label, href]) => (
