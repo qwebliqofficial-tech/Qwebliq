@@ -1,7 +1,9 @@
+import os
 from datetime import datetime, timedelta, timezone
 
 import jwt
 from bson import ObjectId
+from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from database import db
@@ -91,7 +93,7 @@ async def refresh(request: Request, response: Response) -> dict:
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
     try:
-        payload = jwt.decode(token, __import__("os").environ["JWT_SECRET"], algorithms=[ALGORITHM])
+        payload = jwt.decode(token, os.environ["JWT_SECRET"], algorithms=[ALGORITHM])
         if payload.get("type") != "refresh":
             raise ValueError("Unexpected token")
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
@@ -99,7 +101,7 @@ async def refresh(request: Request, response: Response) -> dict:
             raise ValueError("User does not exist")
         set_session(response, user)
         return safe_user(user)
-    except (jwt.InvalidTokenError, ValueError):
+    except (InvalidId, jwt.InvalidTokenError, ValueError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
 
 

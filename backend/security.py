@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 from bson import ObjectId
+from bson.errors import InvalidId
 from fastapi import HTTPException, Request, status
 
 from database import db
@@ -56,7 +57,7 @@ async def get_current_user(request: Request) -> dict:
             raise ValueError("User does not exist")
         user.pop("password_hash", None)
         return user
-    except (jwt.InvalidTokenError, ValueError):
+    except (InvalidId, jwt.InvalidTokenError, ValueError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
 
 

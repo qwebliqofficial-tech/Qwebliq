@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, status
+from pymongo.errors import DuplicateKeyError
 
 from database import db
 from schemas import CalculatorRequest, InquiryRequest, NewsletterRequest
@@ -58,9 +59,8 @@ async def subscribe(payload: NewsletterRequest) -> dict:
         await db.newsletter_subscribers.insert_one(
             {"email": email, "created_at": datetime.now(timezone.utc).isoformat()}
         )
-    except Exception as exc:
-        if "duplicate" not in str(exc).lower():
-            raise HTTPException(status_code=500, detail="Unable to save your subscription")
+    except DuplicateKeyError:
+        pass
     return {"message": "You’re on the list."}
 
 
