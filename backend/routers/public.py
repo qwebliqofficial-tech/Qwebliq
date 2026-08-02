@@ -44,6 +44,9 @@ async def create_inquiry(payload: InquiryRequest) -> dict:
     document = payload.model_dump()
     document["email"] = str(payload.email).lower()
     document["status"] = "new"
+    document["record_type"] = "inquiry"
+    document["is_test"] = False
+    document["is_legitimate"] = True
     document["created_at"] = datetime.now(timezone.utc).isoformat()
     await db.inquiries.insert_one(document)
     return {"message": "Thanks — your project note is safely with our team."}

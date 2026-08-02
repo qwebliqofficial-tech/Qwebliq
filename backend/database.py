@@ -18,6 +18,15 @@ async def seed_application_data() -> None:
     await db.login_attempts.create_index("identifier", unique=True)
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.media_files.create_index("storage_path", unique=True)
+    await db.inquiries.create_index([("record_type", 1), ("is_test", 1), ("name", 1)])
+
+    await db.inquiries.update_many(
+        {
+            "name": {"$regex": "^TEST "},
+            "company": {"$in": ["QA", "QA Co", "QA Corp"]},
+        },
+        {"$set": {"record_type": "inquiry", "is_test": True, "is_legitimate": False}},
+    )
 
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]

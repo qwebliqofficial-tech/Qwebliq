@@ -46,6 +46,8 @@ services and work, captures inquiries, and provides scalable admin and client wo
   alongside live portfolio publishing, website update publishing, and blog publishing.
 - Added protected MongoDB website settings with safe nested updates and cached public media
   delivery through the Qwebliq backend.
+- Added an admin-only cleanup control for explicitly marked QA inquiries. It requires the exact
+  phrase `DELETE TEST DATA` and records the deletion event without touching real inquiries.
 
 ### Prioritized backlog
 #### P0

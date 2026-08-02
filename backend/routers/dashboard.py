@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from fastapi.concurrency import run_in_threadpool
 
 from database import db
-from schemas import ContentCreateRequest, ProjectCreateRequest, SiteSettingsUpdateRequest
+from schemas import (
+    ContentCreateRequest,
+    ProjectCreateRequest,
+    SiteSettingsUpdateRequest,
+    TestDataCleanupRequest,
+)
 from security import get_current_user, require_admin
 from services.storage import download_media, upload_media
 
@@ -14,6 +19,13 @@ router = APIRouter(tags=["Dashboards"])
 
 ALLOWED_MEDIA_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4"}
 MAX_MEDIA_BYTES = 25 * 1024 * 1024
+TEST_CLEANUP_CONFIRMATION = "DELETE TEST DATA"
+TEST_INQUIRY_FILTER = {
+    "record_type": "inquiry",
+    "is_test": True,
+    "name": {"$regex": "^TEST "},
+    "is_legitimate": {"$ne": True},
+}
 EXTENSIONS_BY_TYPE = {
     "image/jpeg": {"jpg", "jpeg"},
     "image/png": {"png"},
@@ -65,6 +77,25 @@ async def admin_overview(_: dict = Depends(require_admin)) -> dict:
 @router.get("/admin/inquiries")
 async def list_inquiries(_: dict = Depends(require_admin)) -> list[dict]:
     return await db.inquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
+
+@router.post("/admin/inquiries/cleanup-test-data")
+async def cleanup_test_inquiries(
+    payload: TestDataCleanupRequest,
+    admin: dict = Depends(require_admin),
+) -> dict:
+    if payload.confirmation != TEST_CLEANUP_CONFIRMATION:
+        raise HTTPException(status_code=400, detail="Invalid confirmation phrase")
+    result = await db.inquiries.delete_many(TEST_INQUIRY_FILTER)
+    await db.admin_activity.insert_one(
+        {
+            "action": "cleanup_test_inquiries",
+            "admin_email": admin["email"],
+            "deleted_count": result.deleted_count,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    return {"deleted_count": result.deleted_count, "message": "Matching test inquiries deleted"}
 
 
 @router.get("/admin/site-settings")

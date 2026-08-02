@@ -49,3 +49,7 @@ class ProjectCreateRequest(BaseModel):
 
 class SiteSettingsUpdateRequest(BaseModel):
     settings: dict
+
+
+class TestDataCleanupRequest(BaseModel):
+    confirmation: str = Field(min_length=1, max_length=64)

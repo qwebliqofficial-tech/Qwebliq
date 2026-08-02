@@ -7,6 +7,7 @@ import PricingEditor from "@/components/PricingEditor";
 import ProjectManager from "@/components/ProjectManager";
 import WebsiteEditor from "@/components/WebsiteEditor";
 import ContentPublisher from "@/components/ContentPublisher";
+import TestDataCleanup from "@/components/TestDataCleanup";
 import { useAuth } from "@/components/AuthContext";
 import WorkspaceNav from "@/components/WorkspaceNav";
 import { api, getErrorMessage } from "@/lib/api";
@@ -43,6 +44,11 @@ export default function AdminPage() {
     }
   }
 
+  async function refreshOverview() {
+    const response = await api.get("/admin/overview");
+    setOverview(response.data);
+  }
+
   return (
     <main className="workspace admin-control-center" data-testid="admin-page">
       <WorkspaceNav subtitle="Administrator" title="Qwebliq control center" />
@@ -59,7 +65,7 @@ export default function AdminPage() {
         </div>
         <div className="admin-control-grid">
           <section className="panel leads-panel" data-testid="recent-inquiries-panel">
-            <div className="panel-heading"><div><p className="eyebrow">Lead desk</p><h3>Recent inquiries</h3></div><Inbox size={19} /></div>
+            <div className="panel-heading"><div><p className="eyebrow">Lead desk</p><h3>Recent inquiries</h3></div><div className="lead-actions"><TestDataCleanup onDeleted={refreshOverview} /><Inbox size={19} /></div></div>
             {overview.recent_inquiries.length === 0 ? <p className="empty-state" data-testid="empty-inquiries">New project notes will appear here.</p> : overview.recent_inquiries.map((inquiry, index) => <article className="lead-row" data-testid={`inquiry-row-${index}`} key={`${inquiry.email}-${inquiry.created_at}`}><div><strong>{inquiry.name}</strong><span>{inquiry.company || inquiry.email}</span></div><p>{inquiry.message}</p><small>{inquiry.budget || "New inquiry"}</small></article>)}
           </section>
           <ProjectManager />
