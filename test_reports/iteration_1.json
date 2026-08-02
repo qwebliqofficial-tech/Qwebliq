@@ -1,0 +1,49 @@
+{
+  "summary": "First iteration end-to-end testing of Qwebliq platform. Wrote pytest suite (19 tests) covering public content, calculator, inquiry, newsletter, auth guards, admin overview/inquiries/publishing, and admin-created client login + client portal. Wrote Playwright UI test hitting the external preview URL covering home rendering, calculator, FAQ search, inquiry+newsletter submission, admin login and auth protection, admin publishing (feed, client), client portal, and mobile 390px layout. Fixed 2 backend 500-error bugs (ObjectId leaking in POST response bodies) that were blocking admin project/feed/blog/client creation. After fix, backend 19/19 pass and full UI journey succeeds including admin-created client sign-in.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/me", "issue": "Returns 401 on public pages because AuthContext eagerly probes session at mount (expected but produces console noise on every anonymous page load)"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "HomePage feed section", "issue": "React 'Encountered two children with the same key' warning because feed posts use post.title as key; when admin publishes duplicate titles (or seeded+new match) React throws duplicate-key warning. Use unique id/created_at instead.", "selector": "[data-testid^=\"feed-post-\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile 390px navigation", "issues": ["When the mobile nav (nav-links.nav-open) is opened, background is transparent — hero heading 'Building digital experiences that move businesses.' visibly bleeds through the menu. Add a solid/opaque background or backdrop to the open mobile drawer."]},
+      {"screen": "Contact section", "issues": ["Contact block still uses the placeholder copy 'Contact details are ready to be tailored…' and WhatsApp CTA href='https://wa.me/' has no number — flagged as intentional editable placeholder per requirements, but WhatsApp link currently leads to an invalid destination."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Use a stable unique key (e.g. post._id / post.title+date) when mapping feed posts in HomePage.jsx to remove React duplicate-key warning.",
+    "Give the open mobile navigation drawer a solid background (or backdrop) so page content does not show through at 390px.",
+    "Populate the WhatsApp CTA href with a real number when contact details are finalised (currently 'https://wa.me/').",
+    "Consider suppressing /api/auth/me probe (or handling 401 silently) for anonymous visitors to reduce console noise on the public homepage."
+  ],
+  "critical_code_review_comments": [
+    "FIXED: /api/admin/projects, /api/admin/feed, /api/admin/blog, /api/auth/clients returned 500 because motor's insert_one mutates the passed dict with an ObjectId `_id`; FastAPI could not serialize it. Added document.pop('_id', None) before returning.",
+    "auth.py refresh handler uses __import__('os').environ['JWT_SECRET'] — should import os at top of file for clarity.",
+    "public.py newsletter handler swallows any exception whose message doesn't contain 'duplicate'; should catch pymongo DuplicateKeyError explicitly rather than string-match.",
+    "security.get_current_user catches jwt.InvalidTokenError but on ObjectId parse failure will also raise bson.errors.InvalidId which is not in the except tuple — will surface as 500 instead of 401.",
+    "database.seed_application_data reseeds bcrypt hash every startup when password matches by re-hashing — hash comparison is done, but existing_admin path recomputes password_hash string that isn't used (minor waste).",
+    "Login rate limit stores {ip:email} identifier so an attacker rotating emails from same IP can bypass lockout; consider per-IP counter too."
+  ],
+  "updated_files": [
+    "/app/backend/routers/auth.py",
+    "/app/backend/routers/dashboard.py",
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% of critical flows (home, calculator, FAQ, inquiry, newsletter, auth guard, admin login+publish+create client, client portal login, mobile layout)"},
+  "test_credentials": "Admin: admin@qwebliq.in / Qw!8yqJAicISOKEwPh7 (from /app/memory/test_credentials.md). Client accounts created during testing use pattern client.qa+<hex>@qwebliq.in with password ClientQA!Pass123 / ClientUIQA!123.",
+  "seed_data_creation": "Test data created during regression run: several TEST_ prefixed inquiries, newsletter subscribers, feed post 'TEST feed publish' / 'TEST UI feed publish', blog post 'TEST blog publish', project 'TEST Portfolio', client users client.qa+<hex>@qwebliq.in. Not cleaned up; they are marked with TEST_ prefix and safe to remove later.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend suite lives at /app/backend/tests/backend_test.py and runs against REACT_APP_BACKEND_URL (external preview URL). All admin publishing endpoints previously returned 500 due to ObjectId in response body — fixed in this iteration by popping _id after insert_one. If future features add more POST endpoints returning inserted docs, apply same pattern. AuthContext hits /api/auth/me eagerly, so 401s in the console on public pages are expected. Mobile drawer background transparency and feed React key uniqueness are outstanding UI-side items for main agent.",
+  "rca of the issue": "Motor's AsyncIOMotorCollection.insert_one mutates the dict argument in place, injecting the newly generated ObjectId under key '_id'. The admin endpoints in dashboard.py and the client creation endpoint in auth.py assigned document['id'] = str(result.inserted_id) but returned the same dict — still containing the raw ObjectId under '_id'. FastAPI's default response serializer (pydantic) cannot serialize bson ObjectId, raising PydanticSerializationError and yielding HTTP 500. Reproduction: POST /api/admin/projects (or /feed, /blog, /auth/clients) with a valid admin cookie and valid payload -> 500 Internal Server Error. Fix: pop '_id' from the document before returning, keeping the string 'id' field. Verified by re-running backend_test.py (19/19 pass) and by full UI journey (admin publishes feed + creates client via Studio publishing tabs, client subsequently signs in and reaches /client portal)."
+}
